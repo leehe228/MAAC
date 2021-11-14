@@ -84,21 +84,24 @@ class AttentionSAC(object):
         """
         obs, acs, rews, next_obs, dones = sample
         # Q loss
+        # next actions
         next_acs = []
+        # next log_pi
         next_log_pis = []
-        for pi, ob in zip(self.target_policies, next_obs):
-            curr_next_ac, curr_next_log_pi = pi(ob, return_log_pi=True)
+
+        for pi, ob in zip(self.target_policies, next_obs): # 모든 agent에 대해 각 agent의 target policy와 next observation
+            curr_next_ac, curr_next_log_pi = pi(ob, return_log_pi=True) # agent의 target policy network (next obs) -> 업데이트된 policy log_pi, action 반환
             next_acs.append(curr_next_ac)
             next_log_pis.append(curr_next_log_pi)
-        trgt_critic_in = list(zip(next_obs, next_acs))
-        critic_in = list(zip(obs, acs))
-        next_qs = self.target_critic(trgt_critic_in)
-        critic_rets = self.critic(critic_in, regularize=True,
-                                  logger=logger, niter=self.niter)
+
+        trgt_critic_in = list(zip(next_obs, next_acs)) # target critic network in : q(s, a) -> prob 
+        critic_in = list(zip(obs, acs)) # critic network in : q(s, a) -> prob
+        next_qs = self.target_critic(trgt_critic_in) # s' (next state following critic network - greedy)
+        critic_rets = self.critic(critic_in, regularize=True, logger=logger, niter=self.niter) # critic network
+                                  
         q_loss = 0
-        for a_i, nq, log_pi, (pq, regs) in zip(range(self.nagents), next_qs,
-                                               next_log_pis, critic_rets):
-            target_q = (rews[a_i].view(-1, 1) +
+        for a_i, nq, log_pi, (pq, regs) in zip(range(self.nagents), next_qs, next_log_pis, critic_rets):
+            target_q = (rews[a_i].view(-1, 1) + # rews[a_i] shape를 (?, 1)로 reshape
                         self.gamma * nq *
                         (1 - dones[a_i].view(-1, 1)))
             if soft:
@@ -167,14 +170,15 @@ class AttentionSAC(object):
                                   grad_norm, self.niter)
 
 
+    # 모든 타겟 네트워크를 업데이트
     def update_all_targets(self):
         """
         Update all target networks (called after normal updates have been
         performed for each agent)
         """
-        soft_update(self.target_critic, self.critic, self.tau)
+        soft_update(self.target_critic, self.critic, self.tau) # critic network를 이용해 target critic network를 업데이트 (central critic network)
         for a in self.agents:
-            soft_update(a.target_policy, a.policy, self.tau)
+            soft_update(a.target_policy, a.policy, self.tau) # 각 agent에 대해 policy network를 이용해 각 agent의 target policy network를 업데이트
 
     def prep_training(self, device='gpu'):
         self.critic.train()
