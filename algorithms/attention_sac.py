@@ -89,8 +89,8 @@ class AttentionSAC(object):
         # next log_pi
         next_log_pis = []
 
-        for pi, ob in zip(self.target_policies, next_obs): # ¸ðµç agent¿¡ ´ëÇØ °¢ agentÀÇ target policy¿Í next observation
-            curr_next_ac, curr_next_log_pi = pi(ob, return_log_pi=True) # agentÀÇ target policy network (next obs) -> ¾÷µ¥ÀÌÆ®µÈ policy log_pi, action ¹ÝÈ¯
+        for pi, ob in zip(self.target_policies, next_obs): # for all agent, each agents' target policy & next observation
+            curr_next_ac, curr_next_log_pi = pi(ob, return_log_pi=True) # agentï¿½ï¿½ target policy network (next obs) -> ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ policy log_pi, action ï¿½ï¿½È¯
             next_acs.append(curr_next_ac)
             next_log_pis.append(curr_next_log_pi)
 
@@ -101,7 +101,7 @@ class AttentionSAC(object):
                                   
         q_loss = 0
         for a_i, nq, log_pi, (pq, regs) in zip(range(self.nagents), next_qs, next_log_pis, critic_rets):
-            target_q = (rews[a_i].view(-1, 1) + # rews[a_i] shape¸¦ (?, 1)·Î reshape
+            target_q = (rews[a_i].view(-1, 1) + # rews[a_i] shapeï¿½ï¿½ (?, 1)ï¿½ï¿½ reshape
                         self.gamma * nq *
                         (1 - dones[a_i].view(-1, 1)))
             if soft:
@@ -170,15 +170,15 @@ class AttentionSAC(object):
                                   grad_norm, self.niter)
 
 
-    # ¸ðµç Å¸°Ù ³×Æ®¿öÅ©¸¦ ¾÷µ¥ÀÌÆ®
+    # ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
     def update_all_targets(self):
         """
         Update all target networks (called after normal updates have been
         performed for each agent)
         """
-        soft_update(self.target_critic, self.critic, self.tau) # critic network¸¦ ÀÌ¿ëÇØ target critic network¸¦ ¾÷µ¥ÀÌÆ® (central critic network)
+        soft_update(self.target_critic, self.critic, self.tau) # critic networkï¿½ï¿½ ï¿½Ì¿ï¿½ï¿½ï¿½ target critic networkï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® (central critic network)
         for a in self.agents:
-            soft_update(a.target_policy, a.policy, self.tau) # °¢ agent¿¡ ´ëÇØ policy network¸¦ ÀÌ¿ëÇØ °¢ agentÀÇ target policy network¸¦ ¾÷µ¥ÀÌÆ®
+            soft_update(a.target_policy, a.policy, self.tau) # ï¿½ï¿½ agentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ policy networkï¿½ï¿½ ï¿½Ì¿ï¿½ï¿½ï¿½ ï¿½ï¿½ agentï¿½ï¿½ target policy networkï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 
     def prep_training(self, device='gpu'):
         self.critic.train()
